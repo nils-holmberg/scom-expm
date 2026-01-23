@@ -1,5 +1,10 @@
 # strategic communication, experimental methods
 
+## online experiment
+
+- [hosted on github](https://nils-holmberg.github.io/scom-expm/web/basic/)
+- [hosted on netlify](https://legendary-cat-50a097.netlify.app/)
+
 ## lab experiments
 
 - [start static html experiment](https://nils-holmberg.github.io/scom-expm/lab/xml/exp/html/001/inst-1.html)
