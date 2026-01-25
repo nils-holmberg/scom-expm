@@ -20,12 +20,18 @@
         .form-container { 
             width: 100%; 
             max-width: 800px; 
-            background-color: #1e1e1e; 
+            background-color: #f0f0f0; /* Light gray background for the form area */
             border-radius: 12px; 
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        iframe { width: 100%; border: none; min-height: 900px; }
+        /* Increased min-height to 1500px to prevent iframe scrolling */
+        iframe { 
+            width: 100%; 
+            border: none; 
+            min-height: 1500px; 
+            display: block;
+        }
     </style>
 </head>
 <body>
