@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mouse Tracker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f1117;
+    color: #e0e0e0;
+    user-select: none;
+  }
+
+  /* --- tracker controls --- */
+
+  #controls {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(15, 17, 23, 0.85);
+    backdrop-filter: blur(8px);
+    padding: 8px 20px;
+    border-radius: 12px;
+    border: 1px solid #222;
+  }
+
+  #toggle-btn {
+    padding: 10px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 2px solid #5b8def;
+    border-radius: 8px;
+    background: transparent;
+    color: #5b8def;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  #toggle-btn:hover {
+    background: #5b8def;
+    color: #0f1117;
+  }
+
+  #toggle-btn.recording {
+    border-color: #ef5b5b;
+    color: #ef5b5b;
+    animation: pulse 1.2s infinite;
+  }
+
+  #toggle-btn.recording:hover {
+    background: #ef5b5b;
+    color: #0f1117;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 91, 91, 0.4); }
+    50% { box-shadow: 0 0 0 10px rgba(239, 91, 91, 0); }
+  }
+
+  #status {
+    font-size: 13px;
+    color: #888;
+    min-width: 140px;
+  }
+
+  #canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  #canvas.playback {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: auto;
+  }
+
+  /* --- landing page content --- */
+
+  .page-content {
+    position: relative;
+    z-index: 10;
+    min-height: 100vh;
+  }
+
+  /* nav */
+  .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 60px;
+    border-bottom: 1px solid #1a1d27;
+  }
+
+  .nav-logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+
+  .nav-logo span { color: #5b8def; }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: #888;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: #e0e0e0; }
+
+  /* hero */
+  .hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 60px;
+    padding: 100px 60px 80px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .hero-text {
+    flex: 1;
+    max-width: 500px;
+  }
+
+  .hero-text h1 {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1.15;
+    color: #fff;
+    letter-spacing: -1px;
+    margin-bottom: 20px;
+  }
+
+  .hero-text h1 span { color: #5b8def; }
+
+  .hero-text p {
+    font-size: 17px;
+    line-height: 1.7;
+    color: #999;
+    margin-bottom: 36px;
+  }
+
+  .hero-cta {
+    display: inline-block;
+    padding: 14px 36px;
+    font-size: 15px;
+    font-weight: 600;
+    background: #5b8def;
+    color: #0f1117;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    text-decoration: none;
+  }
+
+  .hero-cta:hover { background: #7ba4f7; }
+
+  .hero-image {
+    flex: 1;
+    max-width: 480px;
+    aspect-ratio: 4 / 3;
+    background: linear-gradient(135deg, #1a1f35, #252b45);
+    border-radius: 16px;
+    border: 1px solid #2a2f45;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .hero-image-inner {
+    display: flex;
+    gap: 12px;
+    padding: 32px;
+    width: 100%;
+    height: 100%;
+    align-items: flex-end;
+  }
+
+  .bar {
+    flex: 1;
+    border-radius: 6px 6px 0 0;
+    min-height: 30px;
+  }
+
+  .bar:nth-child(1) { height: 45%; background: #5b8def; }
+  .bar:nth-child(2) { height: 70%; background: #7ba4f7; }
+  .bar:nth-child(3) { height: 55%; background: #3d6dd4; }
+  .bar:nth-child(4) { height: 85%; background: #5b8def; }
+  .bar:nth-child(5) { height: 40%; background: #7ba4f7; }
+  .bar:nth-child(6) { height: 65%; background: #3d6dd4; }
+
+  /* features */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    padding: 0 60px 80px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .feature-card {
+    background: #14161e;
+    border: 1px solid #1e2130;
+    border-radius: 12px;
+    padding: 32px;
+    transition: border-color 0.2s;
+  }
+
+  .feature-card:hover { border-color: #2a3050; }
+
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+
+  .feature-icon.blue { background: linear-gradient(135deg, #5b8def, #3d6dd4); }
+  .feature-icon.purple { background: linear-gradient(135deg, #9b6def, #7b4dd4); }
+  .feature-icon.teal { background: linear-gradient(135deg, #5bceef, #3da4d4); }
+
+  .feature-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+
+  .feature-card p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #777;
+  }
+
+  /* testimonial / social proof strip */
+  .social-proof {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 48px;
+    padding: 48px 60px;
+    border-top: 1px solid #1a1d27;
+    border-bottom: 1px solid #1a1d27;
+    max-width: 1200px;
+    margin: 0 auto 80px;
+  }
+
+  .proof-item {
+    text-align: center;
+  }
+
+  .proof-item .number {
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .proof-item .label {
+    font-size: 13px;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  /* bottom CTA */
+  .bottom-cta {
+    text-align: center;
+    padding: 0 60px 100px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .bottom-cta h2 {
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .bottom-cta p {
+    font-size: 16px;
+    color: #888;
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  /* footer */
+  .footer {
+    padding: 32px 60px;
+    border-top: 1px solid #1a1d27;
+    text-align: center;
+    font-size: 13px;
+    color: #444;
+  }
+</style>
+</head>
+<body>
+
+<!-- tracker overlay -->
+<div id="controls">
+  <button id="toggle-btn">Start Tracking</button>
+  <span id="status"></span>
+</div>
+<canvas id="canvas"></canvas>
+
+<!-- landing page content -->
+<div class="page-content">
+
+  <nav class="navbar">
+    <div class="nav-logo">acme<span>lab</span></div>
+    <ul class="nav-links">
+      <li><a href="#">Features</a></li>
+      <li><a href="#">Pricing</a></li>
+      <li><a href="#">Docs</a></li>
+      <li><a href="#">Blog</a></li>
+    </ul>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-text">
+      <h1>Understand how users <span>really</span> see your page</h1>
+      <p>Track mouse movements and click patterns in real time. Replay sessions to discover where attention goes, what gets ignored, and how visitors navigate your content.</p>
+      <a class="hero-cta" href="#">Get Started Free</a>
+    </div>
+    <div class="hero-image">
+      <div class="hero-image-inner">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feature-card">
+      <div class="feature-icon blue"></div>
+      <h3>Real-time capture</h3>
+      <p>Record mouse position at 60 Hz with sub-pixel accuracy. Every movement and click is timestamped for precise session replay.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon purple"></div>
+      <h3>Instant playback</h3>
+      <p>Watch recorded sessions play back exactly as they happened. Blue trails show movement, red markers highlight clicks.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon teal"></div>
+      <h3>Attention heatmaps</h3>
+      <p>Aggregate data across sessions to generate density maps. Identify hot zones, dead areas, and unexpected interaction patterns.</p>
+    </div>
+  </section>
+
+  <div class="social-proof">
+    <div class="proof-item">
+      <div class="number">2.4M</div>
+      <div class="label">Sessions recorded</div>
+    </div>
+    <div class="proof-item">
+      <div class="number">850+</div>
+      <div class="label">Research teams</div>
+    </div>
+    <div class="proof-item">
+      <div class="number">60 Hz</div>
+      <div class="label">Sample rate</div>
+    </div>
+    <div class="proof-item">
+      <div class="number">< 1 ms</div>
+      <div class="label">Capture latency</div>
+    </div>
+  </div>
+
+  <div class="bottom-cta">
+    <h2>Ready to see what your users see?</h2>
+    <p>Start a free recording session right now. Click the tracking button above and move your mouse around this page.</p>
+    <a class="hero-cta" href="#">Try It Now</a>
+  </div>
+
+  <footer class="footer">
+    &copy; 2026 acmelab. All rights reserved. This is a demo page for mouse tracking.
+  </footer>
+
+</div>
+
+<script>
+const btn = document.getElementById("toggle-btn");
+const statusEl = document.getElementById("status");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let state = "idle"; // idle | recording | playing
+let samples = [];
+let startTime = 0;
+let animFrame = null;
+let playbackStart = 0;
+
+function resizeForViewport() {
+  canvas.classList.remove("playback");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", () => {
+  if (state !== "playing") resizeForViewport();
+});
+resizeForViewport();
+
+// --- recording ---
+// Store document-relative Y (clientY + scrollY) so scroll is compensated.
+
+const SAMPLE_INTERVAL = 16; // ~60 Hz
+let lastSampleTime = 0;
+
+function onMouseMove(e) {
+  const now = performance.now();
+  if (now - lastSampleTime < SAMPLE_INTERVAL) return;
+  lastSampleTime = now;
+  samples.push({
+    x: e.clientX,
+    y: e.clientY + window.scrollY,
+    t: now - startTime,
+    click: false
+  });
+}
+
+function onMouseClick(e) {
+  if (e.target === btn) return;
+  samples.push({
+    x: e.clientX,
+    y: e.clientY + window.scrollY,
+    t: performance.now() - startTime,
+    click: true
+  });
+}
+
+function startRecording() {
+  samples = [];
+  startTime = performance.now();
+  lastSampleTime = 0;
+  state = "recording";
+  btn.textContent = "Stop & Playback";
+  btn.classList.add("recording");
+  resizeForViewport();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("click", onMouseClick);
+  updateStatus();
+}
+
+function stopRecording() {
+  document.removeEventListener("mousemove", onMouseMove);
+  document.removeEventListener("click", onMouseClick);
+  state = "idle";
+  btn.classList.remove("recording");
+}
+
+function updateStatus() {
+  if (state === "recording") {
+    statusEl.textContent = samples.length + " samples";
+    requestAnimationFrame(updateStatus);
+  }
+}
+
+// --- playback ---
+// Switch canvas to absolute positioning spanning the full document height.
+// Draw all dots at document-relative coordinates. Auto-scroll to follow cursor.
+
+function resizeForPlayback() {
+  const docW = document.documentElement.scrollWidth;
+  const docH = document.documentElement.scrollHeight;
+  canvas.classList.add("playback");
+  canvas.width = docW;
+  canvas.height = docH;
+}
+
+function startPlayback() {
+  if (samples.length === 0) {
+    statusEl.textContent = "Nothing recorded";
+    state = "idle";
+    btn.textContent = "Start Tracking";
+    return;
+  }
+
+  state = "playing";
+  btn.textContent = "Reset";
+  resizeForPlayback();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // dim overlay so dots stand out over page content
+  ctx.fillStyle = "rgba(15, 17, 23, 0.25)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  playbackStart = performance.now();
+  const totalDuration = samples[samples.length - 1].t;
+  let drawn = 0;
+
+  // scroll to top to start
+  window.scrollTo({ top: 0, behavior: "instant" });
+
+  function frame() {
+    const elapsed = performance.now() - playbackStart;
+    const progress = Math.min(elapsed / totalDuration, 1);
+
+    while (drawn < samples.length && samples[drawn].t <= elapsed) {
+      const s = samples[drawn];
+      if (s.click) {
+        // click: red ring + dot
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 14, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(239, 91, 91, 0.9)";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(239, 91, 91, 0.95)";
+        ctx.fill();
+      } else {
+        // move: blue dot
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(91, 141, 239, 0.75)";
+        ctx.fill();
+      }
+      drawn++;
+    }
+
+    // playback cursor + auto-scroll to follow
+    if (drawn > 0) {
+      const cur = samples[Math.min(drawn, samples.length) - 1];
+
+      // clear previous cursor by redrawing a small area
+      // (we just draw over; slight ghosting is acceptable)
+      ctx.beginPath();
+      ctx.arc(cur.x, cur.y, 10, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // auto-scroll so cursor stays in view
+      const viewTop = window.scrollY;
+      const viewBottom = viewTop + window.innerHeight;
+      const margin = window.innerHeight * 0.3;
+      if (cur.y < viewTop + margin) {
+        window.scrollTo({ top: cur.y - margin, behavior: "instant" });
+      } else if (cur.y > viewBottom - margin) {
+        window.scrollTo({ top: cur.y - window.innerHeight + margin, behavior: "instant" });
+      }
+    }
+
+    statusEl.textContent = "Playback " + Math.round(progress * 100) + "%";
+
+    if (progress < 1) {
+      animFrame = requestAnimationFrame(frame);
+    } else {
+      statusEl.textContent = "Done - " + samples.length + " samples, " + (totalDuration / 1000).toFixed(1) + "s (scroll to explore)";
+      state = "idle";
+      btn.textContent = "Start Tracking";
+    }
+  }
+
+  animFrame = requestAnimationFrame(frame);
+}
+
+function resetAll() {
+  if (animFrame) cancelAnimationFrame(animFrame);
+  samples = [];
+  state = "idle";
+  btn.textContent = "Start Tracking";
+  btn.classList.remove("recording");
+  resizeForViewport();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  statusEl.textContent = "";
+}
+
+// --- toggle ---
+
+btn.addEventListener("click", () => {
+  if (state === "recording") {
+    stopRecording();
+    startPlayback();
+  } else if (state === "playing") {
+    resetAll();
+  } else {
+    startRecording();
+  }
+});
+</script>
+</body>
+</html>
