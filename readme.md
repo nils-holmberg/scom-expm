@@ -1,5 +1,9 @@
 # strategic communication, experimental methods
 
+## mouse tracking
+
+- [hosted on github](https://nils-holmberg.github.io/scom-expm/web/mouse-track/)
+
 ## online experiment
 
 - [hosted on github](https://nils-holmberg.github.io/scom-expm/web/basic/)
