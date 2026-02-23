@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Redirecting...</title>
+
+  <script>
+    // ==============================
+    // 1. SET NUMBER OF CONDITIONS
+    // ==============================
+    const n_conditions = 2;
+
+    // ==============================
+    // 2. RANDOMIZE CONDITION (1–n)
+    // ==============================
+    const condition = Math.floor(Math.random() * n_conditions) + 1;
+
+    console.log("Assigned condition:", condition);
+
+    // ==============================
+    // 3. REDIRECT BASED ON CONDITION
+    // ==============================
+    let targetURL;
+
+    switch (condition) {
+      case 1:
+        targetURL = "https://forms.gle/tYoGitWXeDpuMNvVA";
+        break;
+
+      case 2:
+        targetURL = "https://forms.gle/Pm9ySXck24DvHnkh8";
+        break;
+
+      case 3:
+        targetURL = "https://forms.gle/REPLACE_WITH_FORM_3";
+        break;
+
+      case 4:
+        targetURL = "https://forms.gle/REPLACE_WITH_FORM_4";
+        break;
+
+      default:
+        targetURL = "https://forms.gle/d1Jti9JdQG5CNFkx8";
+    }
+
+    // ==============================
+    // 4. PERFORM REDIRECT
+    // ==============================
+    window.location.href = targetURL;
+
+  </script>
+</head>
+
+<body>
+  <p>Redirecting to study…</p>
+</body>
+</html>
+
